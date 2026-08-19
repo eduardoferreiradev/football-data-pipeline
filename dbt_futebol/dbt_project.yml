@@ -1,0 +1,22 @@
+name: futebol_pipeline
+version: "1.0.0"
+config-version: 2
+
+profile: futebol_pipeline
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+clean-targets:
+  - target
+  - dbt_packages
+
+models:
+  futebol_pipeline:
+    staging:
+      +schema: staging
+      +materialized: view
+    marts:
+      +schema: mart
+      +materialized: table

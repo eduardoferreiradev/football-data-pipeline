@@ -1,0 +1,22 @@
+version: 2
+
+sources:
+  - name: raw
+    database: futebol_dw
+    schema: raw
+    tables:
+      - name: matches
+        description: Partidas brutas extraidas da football-data.org ou do sample local.
+        columns:
+          - name: source
+            description: Origem do dado.
+            tests:
+              - not_null
+          - name: match_id
+            description: Identificador da partida na fonte.
+            tests:
+              - not_null
+          - name: payload
+            description: JSON bruto da partida.
+            tests:
+              - not_null

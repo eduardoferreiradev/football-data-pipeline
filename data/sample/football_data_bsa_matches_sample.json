@@ -1,0 +1,81 @@
+{
+  "filters": {
+    "season": "2025"
+  },
+  "resultSet": {
+    "count": 4,
+    "competitions": "BSA",
+    "first": "2025-04-01",
+    "last": "2025-04-08",
+    "played": 4
+  },
+  "competition": {
+    "id": 2013,
+    "name": "Campeonato Brasileiro Serie A",
+    "code": "BSA",
+    "type": "LEAGUE",
+    "emblem": "https://crests.football-data.org/bsa.png"
+  },
+  "matches": [
+    {
+      "area": {"id": 2032, "name": "Brazil", "code": "BRA", "flag": "https://crests.football-data.org/764.svg"},
+      "competition": {"id": 2013, "name": "Campeonato Brasileiro Serie A", "code": "BSA", "type": "LEAGUE", "emblem": "https://crests.football-data.org/bsa.png"},
+      "season": {"id": 2351, "startDate": "2025-03-29", "endDate": "2025-12-21", "currentMatchday": 1, "winner": null},
+      "id": 501001,
+      "utcDate": "2025-04-01T22:00:00Z",
+      "status": "FINISHED",
+      "matchday": 1,
+      "stage": "REGULAR_SEASON",
+      "group": null,
+      "lastUpdated": "2025-04-02T01:00:00Z",
+      "homeTeam": {"id": 1765, "name": "Flamengo", "shortName": "Flamengo", "tla": "FLA", "crest": "https://crests.football-data.org/1765.png"},
+      "awayTeam": {"id": 1770, "name": "Palmeiras", "shortName": "Palmeiras", "tla": "PAL", "crest": "https://crests.football-data.org/1770.png"},
+      "score": {"winner": "HOME_TEAM", "duration": "REGULAR", "fullTime": {"home": 2, "away": 1}, "halfTime": {"home": 1, "away": 0}}
+    },
+    {
+      "area": {"id": 2032, "name": "Brazil", "code": "BRA", "flag": "https://crests.football-data.org/764.svg"},
+      "competition": {"id": 2013, "name": "Campeonato Brasileiro Serie A", "code": "BSA", "type": "LEAGUE", "emblem": "https://crests.football-data.org/bsa.png"},
+      "season": {"id": 2351, "startDate": "2025-03-29", "endDate": "2025-12-21", "currentMatchday": 1, "winner": null},
+      "id": 501002,
+      "utcDate": "2025-04-02T00:30:00Z",
+      "status": "FINISHED",
+      "matchday": 1,
+      "stage": "REGULAR_SEASON",
+      "group": null,
+      "lastUpdated": "2025-04-02T03:30:00Z",
+      "homeTeam": {"id": 1771, "name": "Sao Paulo", "shortName": "Sao Paulo", "tla": "SAO", "crest": "https://crests.football-data.org/1771.png"},
+      "awayTeam": {"id": 1768, "name": "Corinthians", "shortName": "Corinthians", "tla": "COR", "crest": "https://crests.football-data.org/1768.png"},
+      "score": {"winner": "DRAW", "duration": "REGULAR", "fullTime": {"home": 1, "away": 1}, "halfTime": {"home": 0, "away": 1}}
+    },
+    {
+      "area": {"id": 2032, "name": "Brazil", "code": "BRA", "flag": "https://crests.football-data.org/764.svg"},
+      "competition": {"id": 2013, "name": "Campeonato Brasileiro Serie A", "code": "BSA", "type": "LEAGUE", "emblem": "https://crests.football-data.org/bsa.png"},
+      "season": {"id": 2351, "startDate": "2025-03-29", "endDate": "2025-12-21", "currentMatchday": 1, "winner": null},
+      "id": 501003,
+      "utcDate": "2025-04-05T19:00:00Z",
+      "status": "FINISHED",
+      "matchday": 1,
+      "stage": "REGULAR_SEASON",
+      "group": null,
+      "lastUpdated": "2025-04-05T22:00:00Z",
+      "homeTeam": {"id": 1766, "name": "Fluminense", "shortName": "Fluminense", "tla": "FLU", "crest": "https://crests.football-data.org/1766.png"},
+      "awayTeam": {"id": 1777, "name": "Santos", "shortName": "Santos", "tla": "SAN", "crest": "https://crests.football-data.org/1777.png"},
+      "score": {"winner": "AWAY_TEAM", "duration": "REGULAR", "fullTime": {"home": 0, "away": 2}, "halfTime": {"home": 0, "away": 1}}
+    },
+    {
+      "area": {"id": 2032, "name": "Brazil", "code": "BRA", "flag": "https://crests.football-data.org/764.svg"},
+      "competition": {"id": 2013, "name": "Campeonato Brasileiro Serie A", "code": "BSA", "type": "LEAGUE", "emblem": "https://crests.football-data.org/bsa.png"},
+      "season": {"id": 2351, "startDate": "2025-03-29", "endDate": "2025-12-21", "currentMatchday": 1, "winner": null},
+      "id": 501004,
+      "utcDate": "2025-04-06T21:30:00Z",
+      "status": "FINISHED",
+      "matchday": 1,
+      "stage": "REGULAR_SEASON",
+      "group": null,
+      "lastUpdated": "2025-04-07T00:30:00Z",
+      "homeTeam": {"id": 1776, "name": "Atletico Mineiro", "shortName": "Atletico Mineiro", "tla": "CAM", "crest": "https://crests.football-data.org/1776.png"},
+      "awayTeam": {"id": 1767, "name": "Gremio", "shortName": "Gremio", "tla": "GRE", "crest": "https://crests.football-data.org/1767.png"},
+      "score": {"winner": "HOME_TEAM", "duration": "REGULAR", "fullTime": {"home": 3, "away": 0}, "halfTime": {"home": 2, "away": 0}}
+    }
+  ]
+}

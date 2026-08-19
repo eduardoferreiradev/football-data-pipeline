@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: stg_matches
+    description: Partidas normalizadas a partir do JSON bruto de raw.matches.
+    columns:
+      - name: source
+        description: Origem do dado.
+        tests:
+          - not_null
+      - name: match_id
+        description: Identificador da partida na fonte.
+        tests:
+          - not_null
+      - name: competition_code
+        description: Codigo da competicao na football-data.org.
+        tests:
+          - not_null
+      - name: status
+        description: Status da partida na API.
+        tests:
+          - not_null
+      - name: home_team_id
+        description: Identificador do time mandante.
+      - name: away_team_id
+        description: Identificador do time visitante.

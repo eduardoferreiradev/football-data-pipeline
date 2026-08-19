@@ -1,0 +1,14 @@
+futebol_pipeline:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('POSTGRES_HOST', 'localhost') }}"
+      port: "{{ env_var('POSTGRES_PORT', '5433') | int }}"
+      user: "{{ env_var('POSTGRES_USER', 'futebol') }}"
+      pass: "{{ env_var('POSTGRES_PASSWORD', 'futebol') }}"
+      dbname: "{{ env_var('POSTGRES_DB', 'futebol_dw') }}"
+      schema: public
+      threads: 4
+      connect_timeout: 10
+      sslmode: disable
