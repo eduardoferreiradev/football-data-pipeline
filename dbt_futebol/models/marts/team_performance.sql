@@ -1,5 +1,8 @@
 WITH team_matches AS (
     SELECT
+        source,
+        competition_code,
+        season_year,
         home_team_id AS team_id,
         home_team_name AS team_name,
         'home' AS venue,
@@ -19,6 +22,9 @@ WITH team_matches AS (
     UNION ALL
 
     SELECT
+        source,
+        competition_code,
+        season_year,
         away_team_id AS team_id,
         away_team_name AS team_name,
         'away' AS venue,
@@ -37,8 +43,11 @@ WITH team_matches AS (
 )
 
 SELECT
+    source,
+    competition_code,
+    season_year,
     team_id,
-    team_name,
+    MAX(team_name) AS team_name,
     COUNT(*) AS matches_played,
     SUM(wins) AS wins,
     SUM(draws) AS draws,
@@ -48,5 +57,5 @@ SELECT
     SUM(goals_for - goals_against) AS goal_difference,
     SUM(points) AS points
 FROM team_matches
-GROUP BY team_id, team_name
-ORDER BY points DESC, goal_difference DESC, goals_for DESC
+GROUP BY source, competition_code, season_year, team_id
+ORDER BY source, competition_code, season_year, points DESC, goal_difference DESC, goals_for DESC

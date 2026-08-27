@@ -1,4 +1,5 @@
 SELECT
+    source,
     competition_code,
     season_year,
     matchday,
@@ -10,5 +11,5 @@ SELECT
     SUM(CASE WHEN home_score = away_score THEN 1 ELSE 0 END) AS draws
 FROM {{ ref('stg_matches') }}
 WHERE status = 'FINISHED'
-GROUP BY competition_code, season_year, matchday
-ORDER BY season_year, matchday
+GROUP BY source, competition_code, season_year, matchday
+ORDER BY source, competition_code, season_year, matchday

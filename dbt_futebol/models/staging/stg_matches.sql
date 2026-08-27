@@ -16,4 +16,3 @@ SELECT
     NULLIF(payload #>> '{score,fullTime,away}', '')::INTEGER AS away_score,
     payload #>> '{score,winner}' AS winner
 FROM {{ source('raw', 'matches') }}
-WHERE source = 'football-data.org'

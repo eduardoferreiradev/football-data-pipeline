@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: futebol_dw
+          POSTGRES_USER: futebol
+          POSTGRES_PASSWORD: futebol
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U futebol -d futebol_dw"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DBT_SEND_ANONYMOUS_USAGE_STATS: "false"
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: futebol_dw
+      POSTGRES_USER: futebol
+      POSTGRES_PASSWORD: futebol
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run Ruff
+        run: |
+          ruff check src tests
+          ruff format --check src tests
+
+      - name: Run Python tests
+        run: pytest
+
+      - name: Initialize PostgreSQL schema
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          import psycopg
+
+          with psycopg.connect(
+              host=os.environ["POSTGRES_HOST"],
+              port=os.environ["POSTGRES_PORT"],
+              dbname=os.environ["POSTGRES_DB"],
+              user=os.environ["POSTGRES_USER"],
+              password=os.environ["POSTGRES_PASSWORD"],
+          ) as connection:
+              connection.execute(Path("sql/01_schema.sql").read_text(encoding="utf-8"))
+          PY
+
+      - name: Run sample ingestion twice
+        run: |
+          python src/extract_matches.py --sample
+          python src/extract_matches.py --sample
+
+      - name: Verify sample upsert is idempotent
+        run: |
+          python - <<'PY'
+          import os
+
+          import psycopg
+
+          with psycopg.connect(
+              host=os.environ["POSTGRES_HOST"],
+              port=os.environ["POSTGRES_PORT"],
+              dbname=os.environ["POSTGRES_DB"],
+              user=os.environ["POSTGRES_USER"],
+              password=os.environ["POSTGRES_PASSWORD"],
+          ) as connection:
+              count = connection.execute(
+                  "SELECT COUNT(*) FROM raw.matches WHERE source = 'sample'"
+              ).fetchone()[0]
+
+          assert count == 4, f"Expected 4 sample matches after upsert, found {count}"
+          PY
+
+      - name: Build and test dbt models
+        run: >-
+          dbt build
+          --project-dir dbt_futebol
+          --profiles-dir dbt_futebol
+          --no-version-check

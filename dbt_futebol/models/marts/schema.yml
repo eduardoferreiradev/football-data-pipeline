@@ -3,6 +3,12 @@ version: 2
 models:
   - name: match_results
     description: Resultado final de cada partida finalizada.
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - source
+              - match_id
     columns:
       - name: source
         tests:
@@ -10,7 +16,12 @@ models:
       - name: match_id
         tests:
           - not_null
-          - unique
+      - name: competition_code
+        tests:
+          - not_null
+      - name: season_year
+        tests:
+          - not_null
       - name: home_team_name
         tests:
           - not_null
@@ -19,12 +30,28 @@ models:
           - not_null
 
   - name: team_performance
-    description: Tabela analitica com desempenho agregado por time.
+    description: Desempenho agregado por fonte, competicao, temporada e time.
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - source
+              - competition_code
+              - season_year
+              - team_id
     columns:
+      - name: source
+        tests:
+          - not_null
+      - name: competition_code
+        tests:
+          - not_null
+      - name: season_year
+        tests:
+          - not_null
       - name: team_id
         tests:
           - not_null
-          - unique
       - name: team_name
         tests:
           - not_null
@@ -33,8 +60,26 @@ models:
           - not_null
 
   - name: home_away_performance
-    description: Desempenho dos times separado por mandante e visitante.
+    description: Desempenho por fonte, competicao, temporada, time e mando.
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - source
+              - competition_code
+              - season_year
+              - team_id
+              - venue
     columns:
+      - name: source
+        tests:
+          - not_null
+      - name: competition_code
+        tests:
+          - not_null
+      - name: season_year
+        tests:
+          - not_null
       - name: team_id
         tests:
           - not_null
@@ -52,8 +97,19 @@ models:
           - not_null
 
   - name: round_summary
-    description: Resumo de gols e resultados por rodada.
+    description: Resumo por fonte, competicao, temporada e rodada.
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - source
+              - competition_code
+              - season_year
+              - matchday
     columns:
+      - name: source
+        tests:
+          - not_null
       - name: competition_code
         tests:
           - not_null
@@ -63,18 +119,33 @@ models:
       - name: matchday
         tests:
           - not_null
-          - unique
       - name: total_goals
         tests:
           - not_null
 
   - name: team_attack_defense
-    description: Ranking de ataque e defesa por time.
+    description: Ranking de ataque e defesa por fonte, competicao, temporada e time.
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - source
+              - competition_code
+              - season_year
+              - team_id
     columns:
+      - name: source
+        tests:
+          - not_null
+      - name: competition_code
+        tests:
+          - not_null
+      - name: season_year
+        tests:
+          - not_null
       - name: team_id
         tests:
           - not_null
-          - unique
       - name: team_name
         tests:
           - not_null

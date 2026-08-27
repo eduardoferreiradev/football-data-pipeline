@@ -1,16 +1,16 @@
 # Pipeline de Dados de Futebol
 
-Projeto inicial de engenharia de dados usando futebol como dominio.
+Projeto inicial de engenharia de dados usando futebol como domínio.
 
-O objetivo e entender o caminho dos dados entre sistemas:
+O objetivo é entender o caminho dos dados entre sistemas:
 
 ```text
 API football-data.org
-  -> extractor Python
+  -> extrator Python
   -> PostgreSQL raw
   -> dbt staging
   -> dbt marts
-  -> consultas analiticas
+  -> consultas analíticas
 ```
 
 ## Conceitos do Projeto
@@ -51,9 +51,9 @@ status
 
 ### Mart
 
-Camada pronta para analise.
+Camada pronta para análise.
 
-Views:
+Tabelas:
 
 ```text
 mart.match_results
@@ -63,14 +63,14 @@ mart.round_summary
 mart.team_attack_defense
 ```
 
-Aqui voce responde perguntas como:
+Aqui você responde perguntas como:
 
 ```text
 Qual time fez mais pontos?
 Qual time tem melhor saldo de gols?
 Quais jogos terminaram empatados?
-Qual time e melhor como mandante?
-Qual time e melhor como visitante?
+Qual time é melhor como mandante?
+Qual time é melhor como visitante?
 Qual rodada teve mais gols?
 Qual time tem melhor ataque?
 Qual time tem melhor defesa?
@@ -96,13 +96,26 @@ pip install -r requirements.txt
 
 ### 3. Rodar com dados de exemplo
 
-Este modo nao precisa de token de API:
+Este modo não precisa de token de API:
 
 ```bash
 python src/extract_matches.py --sample
 ```
 
-### 4. Consultar o resultado
+As partidas ficam identificadas com `source = 'sample'` e seguem normalmente
+para os modelos de staging e mart.
+
+### 4. Criar as camadas staging e mart
+
+Depois de carregar os dados em `raw.matches`, execute os modelos e testes do dbt:
+
+```powershell
+.\.venv\Scripts\dbt.exe debug --project-dir dbt_futebol --profiles-dir dbt_futebol
+.\.venv\Scripts\dbt.exe run --project-dir dbt_futebol --profiles-dir dbt_futebol
+.\.venv\Scripts\dbt.exe test --project-dir dbt_futebol --profiles-dir dbt_futebol
+```
+
+### 5. Consultar o resultado
 
 ```bash
 docker exec -it futebol-postgres psql -U futebol -d futebol_dw
@@ -120,7 +133,7 @@ SELECT * FROM mart.round_summary;
 SELECT * FROM mart.team_attack_defense;
 ```
 
-Tambem deixei exemplos prontos em:
+Também deixei exemplos prontos em:
 
 ```text
 queries/example_queries.sql
@@ -134,7 +147,7 @@ Crie uma conta e token em:
 https://www.football-data.org/
 ```
 
-Depois copie o exemplo de variaveis:
+Depois copie o exemplo de variáveis:
 
 ```bash
 cp .env.example .env
@@ -159,7 +172,7 @@ Depois rode:
 python src/extract_matches.py --competition BSA --season 2025
 ```
 
-## Rodar Transformacoes com dbt
+## Rodar Transformações com dbt
 
 Depois de carregar dados em `raw.matches`, rode:
 
@@ -186,22 +199,45 @@ mart.round_summary
 mart.team_attack_defense
 ```
 
-O `dbt test` valida regras basicas de qualidade, como campos nulos, unicidade e placares de jogos finalizados.
+O `dbt test` valida regras básicas de qualidade, como campos nulos,
+unicidade e placares de jogos finalizados.
 
-O extractor tambem le os headers de rate limit da API:
+## Qualidade e testes
+
+Instale as dependências de desenvolvimento:
+
+```powershell
+pip install -r requirements-dev.txt
+```
+
+Execute as verificações locais:
+
+```powershell
+ruff check src tests
+ruff format --check src tests
+pytest
+.\.venv\Scripts\dbt.exe build --project-dir dbt_futebol --profiles-dir dbt_futebol
+```
+
+O workflow `.github/workflows/ci.yml` repete essas verificações em cada
+`push` e `pull_request`. A integração sobe PostgreSQL, executa o sample duas
+vezes, confirma que o upsert manteve quatro partidas e roda `dbt build`.
+
+O extrator registra os headers de rate limit da API:
 
 ```text
 X-RequestsAvailable
 X-RequestCounter-Reset
 ```
 
-Se a API informar que nao existem requisicoes disponiveis, o script espera o tempo de reset antes de continuar.
+Respostas HTTP `429`, `500`, `502`, `503` e `504` são tentadas novamente
+com backoff. O header `Retry-After` é respeitado quando enviado pela API.
 
 ## Arquitetura
 
 ```text
 src/extract_matches.py
-  chama a API ou le o arquivo sample
+  chama a API ou lê o arquivo sample
   insere cada partida em raw.matches
 
 sql/01_schema.sql
@@ -211,12 +247,12 @@ dbt_futebol/models/staging
   transforma JSON bruto em colunas limpas
 
 dbt_futebol/models/marts
-  cria tabelas analiticas
+  cria tabelas analíticas
 ```
 
-## Proximos Passos
+## Próximos Passos
 
 1. Adicionar `Airflow` para agendar o pipeline.
 2. Criar dashboard em Power BI, Metabase ou Streamlit.
-3. Adicionar evolucao da tabela por rodada.
-4. Adicionar CI no GitHub para validar Python e dbt.
+3. Adicionar evolução da tabela por rodada.
+4. Adicionar alertas para falhas e atrasos do pipeline.
