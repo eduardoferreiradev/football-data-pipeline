@@ -250,9 +250,3 @@ dbt_futebol/models/marts
   cria tabelas analíticas
 ```
 
-## Próximos Passos
-
-1. Adicionar `Airflow` para agendar o pipeline.
-2. Criar dashboard em Power BI, Metabase ou Streamlit.
-3. Adicionar evolução da tabela por rodada.
-4. Adicionar alertas para falhas e atrasos do pipeline.
