@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: raw
-    database: futebol_dw
+    database: "{{ target.database }}"
     schema: raw
     tables:
       - name: matches
@@ -20,3 +20,12 @@ sources:
             description: JSON bruto da partida.
             tests:
               - not_null
+
+      - name: observations
+        description: Observações preservadas por coleta.
+  - name: ops
+    database: "{{ target.database }}"
+    schema: ops
+    tables:
+      - name: runs
+        description: Execuções de ingestão e seus horários.

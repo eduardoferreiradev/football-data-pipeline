@@ -10,7 +10,11 @@ import responses
 from src import extract_matches
 
 API_URL = f"{extract_matches.API_BASE_URL}/competitions/BSA/matches"
-VALID_PAYLOAD = {"matches": [{"id": 1001}]}
+VALID_PAYLOAD = json.loads(
+    extract_matches.DEFAULT_SAMPLE_PATH.read_text(encoding="utf-8")
+)
+VALID_PAYLOAD["matches"] = VALID_PAYLOAD["matches"][:1]
+VALID_PAYLOAD["matches"][0]["id"] = 1001
 
 
 @pytest.fixture(autouse=True)
@@ -134,36 +138,9 @@ def test_upsert_empty_payload_does_not_connect(monkeypatch: pytest.MonkeyPatch) 
     connect = Mock(side_effect=AssertionError("database should not be used"))
     monkeypatch.setattr(extract_matches, "connect_to_postgres", connect)
 
-    assert extract_matches.upsert_raw_matches({"matches": []}, "BSA", 2025) == 0
+    with pytest.raises(extract_matches.PayloadValidationError):
+        extract_matches.upsert_raw_matches({"matches": []}, "BSA", 2025)
     connect.assert_not_called()
-
-
-def test_upsert_builds_rows_and_commits(monkeypatch: pytest.MonkeyPatch) -> None:
-    cursor = Mock()
-    cursor.__enter__ = Mock(return_value=cursor)
-    cursor.__exit__ = Mock(return_value=False)
-
-    connection = Mock()
-    connection.__enter__ = Mock(return_value=connection)
-    connection.__exit__ = Mock(return_value=False)
-    connection.cursor.return_value = cursor
-    monkeypatch.setattr(
-        extract_matches,
-        "connect_to_postgres",
-        Mock(return_value=connection),
-    )
-
-    result = extract_matches.upsert_raw_matches(
-        VALID_PAYLOAD,
-        competition_code="BSA",
-        season=2025,
-        source="sample",
-    )
-
-    assert result == 1
-    rows = cursor.executemany.call_args.args[1]
-    assert rows[0][0:4] == ("sample", "BSA", 2025, 1001)
-    connection.commit.assert_called_once_with()
 
 
 def test_main_runs_sample_without_api_token(

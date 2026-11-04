@@ -59,28 +59,15 @@ jobs:
       - name: Run Python tests
         run: pytest
 
-      - name: Initialize PostgreSQL schema
+      - name: Apply versioned migrations twice
         run: |
-          python - <<'PY'
-          import os
-          from pathlib import Path
-
-          import psycopg
-
-          with psycopg.connect(
-              host=os.environ["POSTGRES_HOST"],
-              port=os.environ["POSTGRES_PORT"],
-              dbname=os.environ["POSTGRES_DB"],
-              user=os.environ["POSTGRES_USER"],
-              password=os.environ["POSTGRES_PASSWORD"],
-          ) as connection:
-              connection.execute(Path("sql/01_schema.sql").read_text(encoding="utf-8"))
-          PY
+          python -m src.migrate
+          python -m src.migrate
 
       - name: Run sample ingestion twice
         run: |
-          python src/extract_matches.py --sample
-          python src/extract_matches.py --sample
+          python src/extract_matches.py --sample --season 2025
+          python src/extract_matches.py --sample --season 2025
 
       - name: Verify sample upsert is idempotent
         run: |
@@ -109,3 +96,8 @@ jobs:
           --project-dir dbt_futebol
           --profiles-dir dbt_futebol
           --no-version-check
+
+      - name: Test ingestion history on isolated CI database
+        env:
+          FOOTBALL_TEST_DSN: postgresql://futebol:futebol@localhost:5432/futebol_dw
+        run: pytest tests/test_history.py tests/test_collection_changes.py tests/test_round_analysis.py tests/test_pipeline_lock.py tests/test_publication.py tests/test_migrations.py

@@ -1,0 +1,55 @@
+version: 2
+models:
+  - name: dim_season_teams
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [source, competition_code, season_year, team_id]
+    columns:
+      - name: team_id
+        data_tests: [not_null]
+      - name: team_name
+        data_tests: [not_null]
+  - name: dim_rounds
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [source, competition_code, season_year, matchday]
+  - name: int_team_match
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [source, match_id, team_id]
+    columns:
+      - name: venue
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [home, away]
+  - name: team_round_performance
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [source, competition_code, season_year, cutoff_round, team_id, venue]
+    columns:
+      - name: points
+        data_tests: [not_null]
+      - name: venue
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [total, home, away]
+  - name: standings_by_round
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [source, competition_code, season_year, cutoff_round, team_id]
+    columns:
+      - name: position
+        data_tests: [not_null]
+      - name: is_official
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [false]
+                quote: false

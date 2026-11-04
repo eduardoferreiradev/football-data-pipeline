@@ -1,21 +1,51 @@
+name: brasileirao-2026
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: futebol-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: futebol_dw
-      POSTGRES_USER: futebol
-      POSTGRES_PASSWORD: futebol
+      POSTGRES_DB: ${POSTGRES_DB:-futebol_dw}
+      POSTGRES_USER: ${POSTGRES_USER:-futebol}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env}
     ports:
-      - "5433:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5434}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./sql:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U futebol -d futebol_dw"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 5s
-      retries: 10
+      retries: 15
+      start_period: 180s
+  pipeline:
+    build: .
+    image: brasileirao-2026-pipeline:local
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./data/runs:/app/data/runs
+  scheduler:
+    build: .
+    image: brasileirao-2026-pipeline:local
+    profiles: [scheduled]
+    entrypoint: ["python", "-m", "src.scheduler"]
+    restart: unless-stopped
+    stop_grace_period: 90s
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./data/runs:/app/data/runs
+      - ./data/operations:/app/data/operations
 
 volumes:
   postgres_data:

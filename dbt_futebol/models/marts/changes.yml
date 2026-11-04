@@ -1,0 +1,30 @@
+version: 2
+models:
+  - name: match_changes
+    description: Mudanças de campos entre observações sucessivas no mesmo conjunto.
+    data_tests:
+      - unique_combination_of_columns:
+          arguments:
+            combination_of_columns: [run_id, match_id, field_name]
+    columns:
+      - name: run_id
+        data_tests: [not_null]
+      - name: match_id
+        data_tests: [not_null]
+      - name: field_name
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [presence, status, scheduled_at, round, home_score, away_score, home_team_id, away_team_id]
+      - name: change_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [baseline, added, missing, updated]
+  - name: collection_changes_summary
+    description: Contagem de mudanças por coleta, incluindo coletas sem alterações.
+    columns:
+      - name: run_id
+        data_tests: [not_null, unique]
