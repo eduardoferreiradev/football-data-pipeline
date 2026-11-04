@@ -10,9 +10,13 @@ from typing import Any
 import psycopg
 import requests
 from dotenv import load_dotenv
-from psycopg.types.json import Jsonb
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+if __package__ in (None, ""):
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 API_BASE_URL = "https://api.football-data.org/v4"
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -139,28 +143,12 @@ def handle_rate_limit_headers(response: requests.Response) -> None:
             )
 
 
-def validate_matches_payload(data: Any) -> dict[str, Any]:
-    if not isinstance(data, dict):
-        raise PayloadValidationError("Payload must be a JSON object.")
+def validate_matches_payload(
+    data: Any, competition_code: str | None = None, season: int | None = None
+) -> dict[str, Any]:
+    from src.validation import validate
 
-    if "matches" not in data:
-        raise PayloadValidationError("Payload is missing the 'matches' field.")
-
-    matches = data["matches"]
-    if not isinstance(matches, list):
-        raise PayloadValidationError("Payload field 'matches' must be a list.")
-
-    for index, match in enumerate(matches):
-        if not isinstance(match, dict):
-            raise PayloadValidationError(f"Match at index {index} must be an object.")
-
-        match_id = match.get("id")
-        if not isinstance(match_id, int) or isinstance(match_id, bool) or match_id <= 0:
-            raise PayloadValidationError(
-                f"Match at index {index} has an invalid positive integer 'id'."
-            )
-
-    return data
+    return validate(data, competition_code, season, PayloadValidationError)
 
 
 def load_matches_from_api(
@@ -208,7 +196,7 @@ def load_matches_from_api(
     except (requests.JSONDecodeError, ValueError) as error:
         raise PayloadValidationError("API returned invalid JSON.") from error
 
-    validated_data = validate_matches_payload(data)
+    validated_data = validate_matches_payload(data, competition_code, season)
     LOGGER.info(
         "API request completed",
         extra={
@@ -241,7 +229,7 @@ def load_matches_from_sample(path: Path) -> dict[str, Any]:
 def connect_to_postgres() -> psycopg.Connection:
     return psycopg.connect(
         host=os.getenv("POSTGRES_HOST", "localhost"),
-        port=os.getenv("POSTGRES_PORT", "5433"),
+        port=os.getenv("POSTGRES_PORT", "5434"),
         dbname=os.getenv("POSTGRES_DB", "futebol_dw"),
         user=os.getenv("POSTGRES_USER", "futebol"),
         password=os.getenv("POSTGRES_PASSWORD", "futebol"),
@@ -254,70 +242,15 @@ def upsert_raw_matches(
     competition_code: str,
     season: int,
     source: str = "football-data.org",
+    observed_at: datetime | None = None,
+    run_id=None,
 ) -> int:
-    matches = validate_matches_payload(data)["matches"]
-    extracted_at = datetime.now(UTC)
+    from src.history import ingest
 
-    if not matches:
-        LOGGER.warning(
-            "No matches found in payload",
-            extra={
-                "event": "no_matches",
-                "source": source,
-                "competition_code": competition_code,
-                "season": season,
-                "match_count": 0,
-            },
-        )
-        return 0
-
-    rows = [
-        (
-            source,
-            competition_code,
-            season,
-            match["id"],
-            extracted_at,
-            Jsonb(match),
-        )
-        for match in matches
-    ]
-
-    with connect_to_postgres() as conn:
-        with conn.cursor() as cursor:
-            cursor.executemany(
-                """
-                INSERT INTO raw.matches (
-                    source,
-                    competition_code,
-                    season_year,
-                    match_id,
-                    extracted_at,
-                    payload
-                )
-                VALUES (%s, %s, %s, %s, %s, %s)
-                ON CONFLICT (source, match_id)
-                DO UPDATE SET
-                    competition_code = EXCLUDED.competition_code,
-                    season_year = EXCLUDED.season_year,
-                    extracted_at = EXCLUDED.extracted_at,
-                    payload = EXCLUDED.payload
-                """,
-                rows,
-            )
-        conn.commit()
-
-    LOGGER.info(
-        "Matches loaded into PostgreSQL",
-        extra={
-            "event": "raw_matches_upserted",
-            "source": source,
-            "competition_code": competition_code,
-            "season": season,
-            "match_count": len(matches),
-        },
+    validate_matches_payload(data, competition_code, season)
+    return ingest(
+        data, competition_code, season, source, connect_to_postgres, observed_at, run_id
     )
-    return len(matches)
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -345,7 +278,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--season",
         type=int,
-        default=os.getenv("FOOTBALL_SEASON", "2025"),
+        default=os.getenv("FOOTBALL_SEASON", "2026"),
         help="Season start year.",
     )
     return parser.parse_args(argv)

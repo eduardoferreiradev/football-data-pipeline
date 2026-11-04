@@ -1,252 +1,78 @@
-# Pipeline de Dados de Futebol
+# Brasileirão 2026 — pipeline de dados
 
-Projeto inicial de engenharia de dados usando futebol como domínio.
+Acompanha resultados e alterações da Série A com Python, PostgreSQL e dbt.
+Base: main de eduardoferreiradev/football-data-pipeline, commit 0b6e21e.
 
-O objetivo é entender o caminho dos dados entre sistemas:
+Primeira execução completa verificada: [evidências](docs/first_execution.md).
 
-```text
-API football-data.org
-  -> extrator Python
-  -> PostgreSQL raw
-  -> dbt staging
-  -> dbt marts
-  -> consultas analíticas
-```
+## Executar
 
-## Conceitos do Projeto
+Requisitos: Docker Desktop iniciado. Copie .env.example para .env e configure
+FOOTBALL_DATA_API_TOKEN. Porta local padrão 5434; rede e volume pertencem
+exclusivamente ao projeto brasileirao-2026.
 
-### Raw
+    docker compose run --build --rm pipeline
 
-Camada que guarda o dado bruto, quase do jeito que veio da fonte.
+Sobe PostgreSQL, coleta BSA 2026, valida 380 jogos, 20 clubes e 38 rodadas,
+prepara o schema, preserva observações, atualiza raw e executa dbt build.
+Falhas retornam código diferente de zero.
 
-Tabela:
+data/runs/<execution_id>/response.json e report.json guardam a resposta e o
+diagnóstico por etapa. Esses arquivos são locais e ignorados pelo Git.
 
-```text
-raw.matches
-```
+    docker compose run --rm pipeline --sample
+    docker compose run --rm pipeline --input data/runs/EXECUTION_ID/response.json
 
-Ela guarda cada partida como JSON em `payload`. Isso preserva o dado original.
+O sample é sintético, de 2025, separado por source=sample.
 
-### Staging
+## Consistência e limites desta primeira entrega
 
-Camada que transforma o JSON em colunas limpas.
+- raw.matches guarda a versão mais recente por (source, match_id).
+- raw.observations guarda cada observação e ops.runs registra a ingestão.
+- Repetir um lote cria outra observação, sem duplicar partidas atuais.
+- Partidas e sucesso da ingestão são transacionais. report.json distingue
+  ingestão de sucesso completo, que também depende do dbt.
+- Lote vazio, duplicatas, escopo errado e placares inválidos são rejeitados.
+- Calendário incompleto bloqueia a execução; partidas ausentes não são apagadas.
+- O histórico começa na primeira coleta preservada.
+- dbt constrói uma geração isolada; somente depois dos testes o publicador troca
+  as views dos marts em uma transação. Falhas preservam a publicação anterior.
+- Migrações versionadas registram checksums e preservam o banco já existente.
+- Consulte [publicação, migrações e rollback](docs/publication.md). A implementação
+  foi validada em testes e aplicada ao banco local em 03/11/2026.
 
-View:
+## Mudanças entre coletas
 
-```text
-staging.stg_matches
-```
+O relatório de cada nova execução inclui o resumo de alterações. Consulte
+[as regras](docs/collection_changes.md) e [os exemplos SQL](queries/collection_changes.sql)
+para ver campos anteriores e novos e distinguir baseline, partidas novas e ausentes.
 
-Exemplo de colunas:
+## Classificação e rodadas
 
-```text
-match_id
-match_datetime_utc
-home_team_name
-away_team_name
-home_score
-away_score
-status
-```
+Os modelos incluem desempenho acumulado, classificação calculada e cobertura por
+rodada. Consulte [regras e limitações](docs/round_analysis.md) e
+[consultas prontas](queries/round_analysis.sql).
 
-### Mart
+## Execução diária
 
-Camada pronta para análise.
+O serviço scheduler executa diariamente às 6h de Brasília, com estado persistente
+e tentativas limitadas. Consulte [ativação, diagnóstico e limites](docs/scheduling.md).
 
-Tabelas:
+    docker compose --profile scheduled up -d --build scheduler
 
-```text
-mart.match_results
-mart.team_performance
-mart.home_away_performance
-mart.round_summary
-mart.team_attack_defense
-```
+O computador e o Docker precisam estar ativos. Ao retornar, o serviço recupera o
+ciclo pendente mais recente.
 
-Aqui você responde perguntas como:
+## Desenvolvimento
 
-```text
-Qual time fez mais pontos?
-Qual time tem melhor saldo de gols?
-Quais jogos terminaram empatados?
-Qual time é melhor como mandante?
-Qual time é melhor como visitante?
-Qual rodada teve mais gols?
-Qual time tem melhor ataque?
-Qual time tem melhor defesa?
-```
+    python -m venv .venv
+    .venv/Scripts/python.exe -m pip install -r requirements.txt -r requirements-dev.txt
+    .venv/Scripts/python.exe -m pytest
+    .venv/Scripts/ruff.exe check src tests
 
-## Como Rodar
+## Próximas entregas
 
-### 1. Subir o banco
-
-```bash
-docker compose up -d
-```
-
-### 2. Criar ambiente Python
-
-No Windows PowerShell:
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-```
-
-### 3. Rodar com dados de exemplo
-
-Este modo não precisa de token de API:
-
-```bash
-python src/extract_matches.py --sample
-```
-
-As partidas ficam identificadas com `source = 'sample'` e seguem normalmente
-para os modelos de staging e mart.
-
-### 4. Criar as camadas staging e mart
-
-Depois de carregar os dados em `raw.matches`, execute os modelos e testes do dbt:
-
-```powershell
-.\.venv\Scripts\dbt.exe debug --project-dir dbt_futebol --profiles-dir dbt_futebol
-.\.venv\Scripts\dbt.exe run --project-dir dbt_futebol --profiles-dir dbt_futebol
-.\.venv\Scripts\dbt.exe test --project-dir dbt_futebol --profiles-dir dbt_futebol
-```
-
-### 5. Consultar o resultado
-
-```bash
-docker exec -it futebol-postgres psql -U futebol -d futebol_dw
-```
-
-Dentro do `psql`:
-
-```sql
-SELECT * FROM raw.matches;
-SELECT * FROM staging.stg_matches;
-SELECT * FROM mart.match_results;
-SELECT * FROM mart.team_performance;
-SELECT * FROM mart.home_away_performance;
-SELECT * FROM mart.round_summary;
-SELECT * FROM mart.team_attack_defense;
-```
-
-Também deixei exemplos prontos em:
-
-```text
-queries/example_queries.sql
-```
-
-## Rodar com a API real
-
-Crie uma conta e token em:
-
-```text
-https://www.football-data.org/
-```
-
-Depois copie o exemplo de variáveis:
-
-```bash
-cp .env.example .env
-```
-
-No Windows PowerShell, se preferir:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Edite `.env` e preencha:
-
-```text
-FOOTBALL_DATA_API_TOKEN=seu_token
-POSTGRES_PORT=5433
-```
-
-Depois rode:
-
-```bash
-python src/extract_matches.py --competition BSA --season 2025
-```
-
-## Rodar Transformações com dbt
-
-Depois de carregar dados em `raw.matches`, rode:
-
-```powershell
-$env:POSTGRES_HOST='localhost'
-$env:POSTGRES_PORT='5433'
-$env:POSTGRES_DB='futebol_dw'
-$env:POSTGRES_USER='futebol'
-$env:POSTGRES_PASSWORD='futebol'
-
-.\.venv\Scripts\dbt.exe debug --project-dir dbt_futebol --profiles-dir dbt_futebol
-.\.venv\Scripts\dbt.exe run --project-dir dbt_futebol --profiles-dir dbt_futebol
-.\.venv\Scripts\dbt.exe test --project-dir dbt_futebol --profiles-dir dbt_futebol
-```
-
-O `dbt run` cria:
-
-```text
-staging.stg_matches
-mart.match_results
-mart.team_performance
-mart.home_away_performance
-mart.round_summary
-mart.team_attack_defense
-```
-
-O `dbt test` valida regras básicas de qualidade, como campos nulos,
-unicidade e placares de jogos finalizados.
-
-## Qualidade e testes
-
-Instale as dependências de desenvolvimento:
-
-```powershell
-pip install -r requirements-dev.txt
-```
-
-Execute as verificações locais:
-
-```powershell
-ruff check src tests
-ruff format --check src tests
-pytest
-.\.venv\Scripts\dbt.exe build --project-dir dbt_futebol --profiles-dir dbt_futebol
-```
-
-O workflow `.github/workflows/ci.yml` repete essas verificações em cada
-`push` e `pull_request`. A integração sobe PostgreSQL, executa o sample duas
-vezes, confirma que o upsert manteve quatro partidas e roda `dbt build`.
-
-O extrator registra os headers de rate limit da API:
-
-```text
-X-RequestsAvailable
-X-RequestCounter-Reset
-```
-
-Respostas HTTP `429`, `500`, `502`, `503` e `504` são tentadas novamente
-com backoff. O header `Retry-After` é respeitado quando enviado pela API.
-
-## Arquitetura
-
-```text
-src/extract_matches.py
-  chama a API ou lê o arquivo sample
-  insere cada partida em raw.matches
-
-sql/01_schema.sql
-  cria schemas e tabela raw
-
-dbt_futebol/models/staging
-  transforma JSON bruto em colunas limpas
-
-dbt_futebol/models/marts
-  cria tabelas analíticas
-```
-
+1. Ampliar testes de integração para concorrência.
+2. Revisar a entrega analítica e preparar visualização.
+3. Retenção controlada de gerações e evolução dos alertas operacionais.
+4. Painel e roteiro de demonstração.

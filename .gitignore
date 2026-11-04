@@ -12,3 +12,7 @@ dbt_futebol/target/
 dbt_futebol/logs/
 dbt_futebol/dbt_packages/
 dbt_futebol/.user.yml
+
+data/runs/
+
+data/operations/

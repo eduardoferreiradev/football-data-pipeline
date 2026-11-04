@@ -1,7 +1,9 @@
 {% macro generate_schema_name(custom_schema_name, node) -%}
-    {%- if custom_schema_name is none -%}
-        {{ target.schema }}
+    {%- set base = target.schema if custom_schema_name is none else custom_schema_name | trim -%}
+    {%- set namespace = var('build_namespace', '') -%}
+    {%- if namespace -%}
+        {{ namespace }}_{{ base }}
     {%- else -%}
-        {{ custom_schema_name | trim }}
+        {{ base }}
     {%- endif -%}
 {%- endmacro %}

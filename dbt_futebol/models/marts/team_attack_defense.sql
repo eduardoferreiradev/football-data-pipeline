@@ -19,3 +19,4 @@ SELECT
         ORDER BY goals_against ASC, goal_difference DESC
     ) AS defense_rank
 FROM {{ ref('team_performance') }}
+WHERE matches_played > 0

@@ -16,4 +16,4 @@ SELECT
         ELSE NULL
     END AS result
 FROM {{ ref('stg_matches') }}
-WHERE status = 'FINISHED'
+WHERE is_eligible
